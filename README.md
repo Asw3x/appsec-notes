@@ -39,16 +39,6 @@ My approach is focused on:
 
 ---
 
-## Ethics & Scope
-
-All notes and examples are based on:
-- legal labs and training platforms
-- intentionally vulnerable applications
-- personal test accounts
-
-No production systems or real user data are tested or affected.
-
----
 
 ## Goal
 
