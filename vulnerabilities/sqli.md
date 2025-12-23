@@ -110,8 +110,6 @@ If no data is reflected, I test blind techniques.
 id=1 AND 1=1
 id=1 AND 1=2
 
-shell
-Копировать код
 
 ### Time-based
 id=1 AND SLEEP(5)
