@@ -8,7 +8,7 @@ A Telegram bot that extracts **EXIF metadata** from photos sent by users and for
 
 - Handles compressed photos sent through Telegram (`.photo` messages).
 - Handles images sent as **documents** (uncompressed originals — recommended for full EXIF preservation).
-- Extracts all available EXIF tags using **Pillow**.
+- Extracts all available EXIF tags using **exifread** (pure Python, no heavy image-processing dependency).
 - Forwards a JSON payload to a configurable server endpoint.
 - Replies to the user with a summary of extracted tags.
 
@@ -77,11 +77,11 @@ The bot sends a `POST` request with `Content-Type: application/json` to `SERVER_
   "file_id": "AgACAgIAAxkBAAI...",
   "file_unique_id": "AQADmbIxGw...",
   "exif": {
-    "Make": "Apple",
-    "Model": "iPhone 14 Pro",
-    "DateTime": "2024:06:01 12:34:56",
-    "GPSInfo": "...",
-    "Software": "17.0"
+    "Image Make": "Apple",
+    "Image Model": "iPhone 14 Pro",
+    "Image DateTime": "2024:06:01 12:34:56",
+    "GPS GPSLatitude": "...",
+    "Image Software": "17.0"
   }
 }
 ```

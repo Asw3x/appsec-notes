@@ -12,10 +12,9 @@ import io
 import logging
 import os
 
+import exifread
 import requests
 from dotenv import load_dotenv
-from PIL import Image
-from PIL.ExifTags import TAGS
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -25,6 +24,7 @@ BOT_TOKEN: str = os.environ["BOT_TOKEN"]
 SERVER_URL: str = os.environ["SERVER_URL"]
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
 MAX_DISPLAYED_TAGS: int = 20
+SERVER_REQUEST_TIMEOUT: int = 10
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -34,26 +34,21 @@ logger = logging.getLogger(__name__)
 
 
 def extract_exif(image_bytes: bytes) -> dict:
-    """Return a dict of human-readable EXIF tag names to their values."""
+    """Return a dict of EXIF tag names to their string values using exifread."""
     try:
-        image = Image.open(io.BytesIO(image_bytes))
-        raw_exif = image.getexif()  # public API; returns an Exif mapping
+        tags = exifread.process_file(
+            io.BytesIO(image_bytes),
+            details=False,
+            builtin_types=True,
+        )
     except Exception as exc:
-        logger.warning("Could not open image for EXIF extraction: %s", exc)
-        return {}
-
-    if not raw_exif:
+        logger.warning("Could not parse EXIF data: %s", exc)
         return {}
 
     metadata: dict = {}
-    for tag_id, value in raw_exif.items():
-        tag_name = TAGS.get(tag_id, str(tag_id))
-        # Convert bytes values to a readable string
+    for tag_name, value in tags.items():
         if isinstance(value, bytes):
-            try:
-                value = value.decode("utf-8", errors="replace")
-            except Exception:
-                value = value.hex()
+            value = value.decode("utf-8", errors="replace")
         metadata[tag_name] = str(value)
 
     return metadata
@@ -75,7 +70,7 @@ def send_to_server(payload: dict) -> requests.Response:
     response = requests.post(
         SERVER_URL,
         json=payload,
-        timeout=10,
+        timeout=SERVER_REQUEST_TIMEOUT,
         headers={"Content-Type": "application/json"},
     )
     response.raise_for_status()
