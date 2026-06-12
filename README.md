@@ -1,46 +1,15 @@
-# AppSec Notes
+# Application Security and Bug Bounty Repository
 
-I am a security student focused on **Web and API security** with a strong interest
-in **Application Security** and manual vulnerability research.
+Welcome to my Application Security (AppSec) and Bug Bounty knowledge base. This repository serves as a structured collection of research notes, methodologies, and vulnerability analyses gathered during security assessments and educational studies.
 
-This repository contains my **personal notes, checklists and practical approaches**
-used while learning and practicing AppSec and pentesting.
+## Directory Structure
 
----
+- **[vulnerabilities/](./vulnerabilities/)**: Contains detailed technical notes and exploitation techniques for various web vulnerabilities, including Cross-Site Scripting (XSS), Server-Side Request Forgery (SSRF), SQL Injection (SQLi), and XML External Entity (XXE) injection.
+- **[resources/](./resources/)**: A curated list of reference materials, testing checklists, and essential tools utilized during web application penetration testing.
 
-## Focus Areas
+## Objective
 
-- Web & REST API security testing
-- Access control and authorization logic
-- IDOR / Broken Object Level Authorization (BOLA)
-- Business and application logic vulnerabilities
-- Manual pentesting workflows
+The primary goal of this repository is to systematize knowledge on identifying and mitigating security flaws in web applications. All materials are strictly intended for educational purposes and authorized security assessments.
 
 ---
-
-## Topics Covered
-
-- HTTP fundamentals & REST API behavior
-- Authentication vs Authorization (practical cases)
-- IDOR and object ownership validation
-- CSRF & CORS (real-world impact and limitations)
-- Burp Suite workflow for Web & API testing
-- Manual request analysis and response comparison
-
----
-
-## Methodology
-
-My approach is focused on:
-- understanding application logic, not automated scanning
-- identifying authorization boundaries
-- analyzing how user-controlled data affects backend behavior
-- producing clear and reproducible test cases
-
----
-
-
-## Goal
-
-Prepare for an **Application Security / Web Pentesting**
-internship or junior-level role.
+*Disclaimer: The information provided in this repository should only be used on systems where you have explicit permission to test.*
