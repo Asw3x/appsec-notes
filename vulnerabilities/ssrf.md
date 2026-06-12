@@ -1,159 +1,30 @@
-# How I look for SSRF in real applications
-
-This note describes my practical approach to identifying
-Server-Side Request Forgery (SSRF) vulnerabilities
-in web applications and APIs.
-
-I focus on understanding **how the backend builds and performs outbound requests**.
-
----
-
-## 1. Identifying SSRF Entry Points
-
-I start by searching for parameters that influence backend HTTP requests.
-
-Typical indicators:
-- URL or host parameters
-- API endpoints calling external services
-- integrations (stock, delivery, payment, webhooks)
-- file import / preview functionality
-
-Example: stockApi=http://stock.weliketoshop.net:8080/product/stock/check?productId=6&storeId=1
-
-This strongly suggests a server-side request.
-
----
-
-## 2. Basic SSRF Validation
-
-I first test whether I can control the destination of the request.
-
-Example: stockApi=http://example.com
-
-Then I attempt internal targets:
-stockApi=http://localhost
-
-stockApi=http://127.0.0.1
-
-stockApi=http://127.0.0.1/admin
-
-Observable indicators:
-- response content changes
-- connection errors
-- timeout differences
-- HTTP 500 responses
-
----
-
-## 3. Internal Network Access Testing
-
-After confirming outbound request control, I test access to internal services.
-
-Common targets:
-
-http://localhost
-
-http://127.0.0.1
-
-http://169.254.169.254
-
-http://internal-service
-
-Cloud metadata endpoints are always tested where applicable.
-
----
-
-## 4. Blacklist-based Filter Bypass
-
-If basic payloads are blocked, I test alternative representations.
-
-### IP obfuscation
-
-http://2130706433
-
-http://017700000001
-
-http://127.1
-
-### DNS-based bypass
-
-http://controlled-domain.example(resolves to 127.0.0.1)
-
-### Encoding tricks
-- URL encoding
-- double URL encoding
-- mixed case
-- protocol switching (http → https)
-
----
-
-## 5. Whitelist-based Filter Bypass
-
-If the application enforces allowed hosts, I test parsing edge cases.
-
-### Userinfo injection
-
-https://allowed-host@evil-host
-
-### Fragment confusipn
-
-https://evil-host#allowed-host
-
-### Subdomain tricks
-
-https://allowed-host.evil-host
-
-### URL encoding mismatches
-Used when input validation and request execution differ.
-
----
-
-## 6. SSRF via Open Redirect
-
-If direct SSRF is restricted, I look for open redirects.
-
-Example: /redirect?next=http://evil-host
-
-Then chain it: stockApi=https://vulnerable-site/redirect?next=http://internal-host
-
-This often bypasses strict host validation.
-
----
-
-## 7. Blind SSRF Detection
-
-If no response is returned, I test for blind SSRF.
-
-Methods:
-- time-based behavior
-- DNS interaction
-- external callbacks
-
-I use an out-of-band interaction service to confirm:
-- DNS resolution
-- HTTP requests
-- connection attempts
-
----
-
-## 8. Non-obvious SSRF Surfaces
-
-I also test SSRF in:
-
-- HTTP headers (e.g. Referer)
-- XML payloads (via XXE)
-- partial URL construction
-- webhook URLs
-- file import / preview endpoints
-
-Example:
-
-Referer: http://internal-host/admin
-
----
-
-## Notes
-
-- SSRF often appears as a **logic vulnerability**
-- I prioritize understanding URL parsing behavior
-- Response timing is often more important than content
+Короче есть например такой параметр:
+```http
+stockApi=http://stock.weliketoshop.net:8080/product/stock/check%3FproductId%3D6%26storeId%3D1
+```
+Можно попробовать:
+```http
+stockApi=http://localhost/admin
+```
+## Обход общих средств защиты SSRF
+#### SSRF с входными фильтрами на основе черного списка
+- Используйте альтернативное представление IP-адреса `127.0.0.1`, такое как `2130706433`, `017700000001` или `127.1`.
+- Зарегистрируйте свое собственное доменное имя с разрешением `127.0.0.1`. Вы можете использовать `поддельный.burpcollaborator.net` для этой цели.
+- Обфускируйте заблокированные строки, используя кодировку URL или изменение регистра.
+- Укажите управляемый вами URL-адрес, который перенаправляется на целевой URL-адрес. Попробуйте использовать разные коды перенаправления, а также разные протоколы для целевого URL-адреса. Например, было показано, что переключение с URL-адреса `http:` на `https:` во время перенаправления позволяет обойти некоторые фильтры, защищающие от SSRF.
+#### SSRF с входными фильтрами на основе белого списка
+- Вы можете вставить учетные данные в URL-адрес перед именем хоста, используя символ `@`. Например:- `https://expected-host:fakepassword@evil-host`
+- Вы можете использовать символ `#` для обозначения фрагмента URL-адреса. Например: `https://evil-host#expected-host`
+- Вы можете использовать иерархию именования DNS для ввода необходимых входных данных в полное DNS-имя, которым вы управляете. Например:`https://expected-host.evil-host`
+- Вы можете кодировать символы в URL-кодировке, чтобы запутать код, анализирующий URL. Это особенно полезно, если код, реализующий фильтр, обрабатывает символы в URL-кодировке иначе, чем код, выполняющий внутренний HTTP-запрос. Вы также можете попробовать [двойное кодирование](https://portswigger.net/web-security/essential-skills/obfuscating-attacks-using-encodings#obfuscation-via-double-url-encoding) символов; некоторые серверы рекурсивно декодируют URL-адреса получаемых ими входных данных, что может привести к дальнейшим расхождениям.
+#### Обход фильтров SSRF с помощью Open-Redirect
+- Например, приложение содержит открытую уязвимость перенаправления, при которой следующий URL: `/product/nextProduct?currentProductId=6&path=http://evil-user.net`
+#### Слепые уязвимости SSRF
+- Использовать аналог Collaborator из [[Полезные Ресурсы]]
+#### Поиск скрытой поверхности атаки для уязвимостей SSRF
+#### Частичные URL-адреса в запросах
+Иногда приложение помещает в параметры запроса только имя хоста или часть URL-адреса. Отправленное значение затем включается на стороне сервера в полный URL-адрес, который запрашивается. Если значение легко распознается как имя хоста или URL-путь, потенциальная поверхность атаки может быть очевидной. Однако возможность использования в качестве полного SSRF может быть ограничена, поскольку вы не контролируете весь запрашиваемый URL-адрес.
+#### URL-адреса в форматах данных
+Некоторые приложения передают данные в форматах со спецификацией, допускающей включение URL-адресов, которые могут быть запрошены анализатором данных для данного формата. Очевидным примером этого является формат данных XML, который широко используется в веб-приложениях для передачи структурированных данных от клиента к серверу. Когда приложение принимает данные в формате XML и анализирует их, оно может быть уязвимо для внедрения [[XXEi (XML external entity injection)]]. Оно также может быть уязвимо для SSRF через [[XXEi (XML external entity injection)]].
+#### SSRF через заголовок Referrer
+Некоторые приложения используют серверное аналитическое программное обеспечение для отслеживания посетителей. Это программное обеспечение часто регистрирует заголовок Refererer в запросах, поэтому оно может отслеживать входящие ссылки. Часто аналитическое программное обеспечение просматривает любые сторонние URL-адреса, которые отображаются в заголовке ссылки. Обычно это делается для анализа содержимого ссылающихся сайтов, включая якорный текст, который используется во входящих ссылках. В результате заголовок Referrer часто является полезным средством атаки на уязвимости SSRF.
